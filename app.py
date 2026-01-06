@@ -1,88 +1,52 @@
-# =====================================
-# STREAMLIT APP - TELCO CHURN PREDICTION
-# =====================================
-
 import streamlit as st
 import pandas as pd
 import joblib
 
-# -------------------------------------
+# =====================================
+# PAGE CONFIG
+# =====================================
+st.set_page_config(
+    page_title="Telco Churn Prediction",
+    page_icon="📊",
+    layout="wide"
+)
+
+# =====================================
 # LOAD MODEL
-# -------------------------------------
-# Model ini sudah berisi:
-# - preprocessing (scaling + encoding)
-# - model Random Forest terbaik (hasil GridSearch)
+# =====================================
 model = joblib.load("best_churn_model.pkl")
 
-# -------------------------------------
-# JUDUL APLIKASI
-# -------------------------------------
-st.title("📊 Prediksi Churn Pelanggan Telco")
-st.write("""
-Aplikasi ini digunakan untuk memprediksi apakah pelanggan **akan churn (berhenti)**  
-atau **tetap berlangganan**, berdasarkan data layanan dan karakteristik pelanggan.
-""")
-
-st.markdown("---")
-
-# -------------------------------------
-# INPUT DATA PENGGUNA
-# -------------------------------------
-st.subheader("🧾 Masukkan Data Pelanggan")
-
-tenure = st.number_input(
-    "Lama Berlangganan (bulan)",
-    min_value=0,
-    max_value=72,
-    value=12
+# =====================================
+# HEADER
+# =====================================
+st.markdown(
+    """
+    <h1 style='text-align: center;'>📊 Telco Customer Churn Prediction</h1>
+    <p style='text-align: center; font-size: 18px;'>
+    Prediksi apakah pelanggan akan <b>berhenti (Churn)</b> atau <b>tetap berlangganan</b>
+    menggunakan Machine Learning.
+    </p>
+    <hr>
+    """,
+    unsafe_allow_html=True
 )
 
-monthly_charges = st.number_input(
-    "Biaya Bulanan (Monthly Charges)",
-    min_value=0.0,
-    max_value=200.0,
-    value=70.0
-)
+# =====================================
+# SIDEBAR
+# =====================================
+st.sidebar.header("⚙️ Pengaturan Pelanggan")
 
-total_charges = st.number_input(
-    "Total Biaya (Total Charges)",
-    min_value=0.0,
-    max_value=10000.0,
-    value=1000.0
-)
-
-gender = st.selectbox(
-    "Jenis Kelamin",
-    ["Male", "Female"]
-)
-
-senior = st.selectbox(
-    "Status Lansia",
+gender = st.sidebar.selectbox("Jenis Kelamin", ["Male", "Female"])
+senior = st.sidebar.selectbox(
+    "Senior Citizen",
     [0, 1],
     format_func=lambda x: "Ya" if x == 1 else "Tidak"
 )
-
-partner = st.selectbox(
-    "Memiliki Pasangan?",
-    ["Yes", "No"]
-)
-
-dependents = st.selectbox(
-    "Memiliki Tanggungan?",
-    ["Yes", "No"]
-)
-
-internet = st.selectbox(
-    "Layanan Internet",
-    ["DSL", "Fiber optic", "No"]
-)
-
-contract = st.selectbox(
-    "Jenis Kontrak",
-    ["Month-to-month", "One year", "Two year"]
-)
-
-payment = st.selectbox(
+partner = st.sidebar.selectbox("Memiliki Pasangan", ["Yes", "No"])
+dependents = st.sidebar.selectbox("Memiliki Tanggungan", ["Yes", "No"])
+internet = st.sidebar.selectbox("Layanan Internet", ["DSL", "Fiber optic", "No"])
+contract = st.sidebar.selectbox("Jenis Kontrak", ["Month-to-month", "One year", "Two year"])
+payment = st.sidebar.selectbox(
     "Metode Pembayaran",
     [
         "Electronic check",
@@ -91,24 +55,36 @@ payment = st.selectbox(
         "Credit card (automatic)"
     ]
 )
+paperless = st.sidebar.selectbox("Paperless Billing", ["Yes", "No"])
 
-paperless = st.selectbox(
-    "Paperless Billing",
-    ["Yes", "No"]
-)
+# =====================================
+# MAIN INPUT AREA
+# =====================================
+st.subheader("🧾 Informasi Tagihan")
+
+col1, col2, col3 = st.columns(3)
+
+with col1:
+    tenure = st.number_input("Lama Berlangganan (bulan)", 0, 72, 12)
+
+with col2:
+    monthly_charges = st.number_input("Biaya Bulanan ($)", 0.0, 200.0, 70.0)
+
+with col3:
+    total_charges = st.number_input("Total Biaya ($)", 0.0, 10000.0, 1000.0)
 
 st.markdown("---")
 
-# -------------------------------------
-# DATAFRAME INPUT (HARUS SAMA DENGAN TRAINING)
-# -------------------------------------
+# =====================================
+# DATAFRAME INPUT
+# =====================================
 input_data = pd.DataFrame([{
     "gender": gender,
     "SeniorCitizen": senior,
     "Partner": partner,
     "Dependents": dependents,
     "tenure": tenure,
-    "PhoneService": "Yes",  # default aman
+    "PhoneService": "Yes",
     "MultipleLines": "No",
     "InternetService": internet,
     "OnlineSecurity": "No",
@@ -124,18 +100,41 @@ input_data = pd.DataFrame([{
     "TotalCharges": total_charges
 }])
 
-# -------------------------------------
-# PREDIKSI
-# -------------------------------------
-if st.button("🔍 Prediksi Churn"):
+# =====================================
+# PREDICTION
+# =====================================
+st.markdown("### 🔍 Hasil Prediksi")
+
+if st.button("🚀 Prediksi Sekarang", use_container_width=True):
     prediction = model.predict(input_data)[0]
     probability = model.predict_proba(input_data)[0][1]
 
     st.markdown("---")
 
     if prediction == 1:
-        st.error(f"""❌ **PELANGGAN BERPOTENSI CHURN**
-Probabilitas Churn: **{probability:.2%}**""")
+        st.error(
+            f"""
+            ❌ **PELANGGAN BERPOTENSI CHURN**  
+            📉 Probabilitas Churn: **{probability:.2%}**
+            """
+        )
     else:
-        st.success(f"""✅ **PELANGGAN TIDAK CHURN**
-Probabilitas Churn: **{probability:.2%}**""")
+        st.success(
+            f"""
+            ✅ **PELANGGAN TIDAK CHURN**  
+            📈 Probabilitas Churn: **{probability:.2%}**
+            """
+        )
+
+# =====================================
+# FOOTER
+# =====================================
+st.markdown(
+    """
+    <hr>
+    <p style='text-align: center; font-size: 14px; color: gray;'>
+    Developed by Awaludin | Telco Churn Prediction App | Streamlit
+    </p>
+    """,
+    unsafe_allow_html=True
+)
